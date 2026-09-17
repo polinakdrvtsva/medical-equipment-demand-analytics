@@ -1,25 +1,13 @@
 from pathlib import Path
-import sys
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from sqlalchemy import create_engine
 
-
-# ============================================================
-# Project configuration
-# ============================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.append(str(PROJECT_ROOT))
+DATA_FILE = PROJECT_ROOT / "data" / "dashboard" / "analytics_demand_output.csv"
 
-from config import DB_CONNECTION_STRING
-
-
-# ============================================================
-# Page configuration
-# ============================================================
 
 st.set_page_config(
     page_title="Medical Equipment Demand Analytics",
@@ -27,9 +15,6 @@ st.set_page_config(
     layout="wide",
 )
 
-# ============================================================
-# Styling
-# ============================================================
 
 st.markdown(
     """
@@ -38,11 +23,9 @@ st.markdown(
             padding-top: 2rem;
             padding-bottom: 2rem;
         }
-
         [data-testid="stMetricValue"] {
             font-size: 2rem;
         }
-
         [data-testid="stMetricLabel"] {
             font-size: 0.9rem;
         }
@@ -51,44 +34,16 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-# ============================================================
-# Database connection
-# ============================================================
-
-@st.cache_resource
-def get_engine():
-    return create_engine(DB_CONNECTION_STRING)
-
-
 @st.cache_data
 def load_data():
-    query = """
-        SELECT
-            part_id,
-            date,
-            description,
-            category,
-            subcategory,
-            microarea,
-            demand,
-            profile,
-            upper_bound,
-            outlier_method,
-            anomaly_score,
-            is_reactivation,
-            is_anomaly,
-            anomaly_type
-        FROM analytics_demand_output
-        ORDER BY date, part_id;
-    """
+    df = pd.read_csv(DATA_FILE)
 
-    engine = get_engine()
-
-    df = pd.read_sql(query, engine)
     df["date"] = pd.to_datetime(df["date"])
+    df["is_anomaly"] = df["is_anomaly"].map({"t": True, "f": False})
+    df["is_reactivation"] = df["is_reactivation"].map({"t": True, "f": False})
 
     return df
+
 
 
 df = load_data()
