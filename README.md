@@ -289,7 +289,10 @@ _Screenshots will be added here._
 
 ---
 
-## Project Structure `medical-equipment-demand-analytics/
+## Project Structure
+
+```text
+medical-equipment-demand-analytics/
 │
 ├── README.md
 ├── requirements.txt
@@ -320,7 +323,7 @@ _Screenshots will be added here._
 └── tests/
     ├── test_data_quality.py
     └── test_outlier_detection.py
-`
+```
 
 ---
 
