@@ -2,7 +2,7 @@
 
 > **Portfolio project based on a real-world analytical problem, rebuilt with synthetic data for confidentiality.**
 
-[🚀 Open Interactive Dashboard](YOUR_STREAMLIT_URL)
+[🚀 Open Interactive Dashboard](https://medical-equipment-demand-analytics-ead9qjzcceccpdktotkqth.streamlit.app)
 
 ## Overview
 
@@ -289,39 +289,38 @@ _Screenshots will be added here._
 
 ---
 
-## Project Structure
-
-    medical-equipment-demand-analytics/
-    │
-    ├── README.md
-    ├── requirements.txt
-    ├── .gitignore
-    │
-    ├── data/
-    │   ├── README.md
-    │   └── sample/
-    │
-    ├── sql/
-    │   ├── create_tables.sql
-    │   ├── load_data.sql
-    │   ├── data_quality_checks.sql
-    │   ├── analysis_queries.sql
-    │   └── create_analysis_output.sql
-    │
-    ├── src/
-    │   ├── generate_data.py
-    │   ├── demand_analysis.py
-    │   ├── outlier_detection.py
-    │   ├── validate_detection.py
-    │   ├── load_detection_results.py
-    │   └── database.py
-    │
-    ├── dashboard/
-    │   └── app.py
-    │
-    └── tests/
-        ├── test_data_quality.py
-        └── test_outlier_detection.py
+## Project Structure `medical-equipment-demand-analytics/
+│
+├── README.md
+├── requirements.txt
+├── .gitignore
+├── generate_data.py
+│
+├── data/
+│   ├── dashboard/
+│   │   └── analytics_demand_output.csv
+│   └── sample/
+│
+├── sql/
+│   ├── create_tables.sql
+│   ├── load_data.sql
+│   ├── data_quality_checks.sql
+│   ├── analysis_queries.sql
+│   └── create_analysis_output.sql
+│
+├── src/
+│   ├── demand_analysis.py
+│   ├── outlier_detection.py
+│   ├── validate_detection.py
+│   └── load_detection_results.py
+│
+├── dashboard/
+│   └── app.py
+│
+└── tests/
+    ├── test_data_quality.py
+    └── test_outlier_detection.py
+`
 
 ---
 
