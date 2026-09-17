@@ -119,7 +119,6 @@ The objective is to distinguish genuinely unusual demand from normal variation t
 
 ## Data Pipeline
 
-```text
 Synthetic Data Generation
           │
           ▼
@@ -292,38 +291,39 @@ _Screenshots will be added here._
 
 ## Project Structure
 
-```text
-medical-equipment-demand-analytics/
-│
-├── README.md
-├── requirements.txt
-├── .gitignore
-│
-├── data/
-│   ├── README.md
-│   └── sample/
-│
-├── sql/
-│   ├── create_tables.sql
-│   ├── load_data.sql
-│   ├── data_quality_checks.sql
-│   ├── analysis_queries.sql
-│   └── create_analysis_output.sql
-│
-├── src/
-│   ├── generate_data.py
-│   ├── demand_analysis.py
-│   ├── outlier_detection.py
-│   ├── validate_detection.py
-│   ├── load_detection_results.py
-│   └── database.py
-│
-├── dashboard/
-│   └── app.py
-│
-└── tests/
-    ├── test_data_quality.py
-    └── test_outlier_detection.py
+    medical-equipment-demand-analytics/
+    │
+    ├── README.md
+    ├── requirements.txt
+    ├── .gitignore
+    │
+    ├── data/
+    │   ├── README.md
+    │   └── sample/
+    │
+    ├── sql/
+    │   ├── create_tables.sql
+    │   ├── load_data.sql
+    │   ├── data_quality_checks.sql
+    │   ├── analysis_queries.sql
+    │   └── create_analysis_output.sql
+    │
+    ├── src/
+    │   ├── generate_data.py
+    │   ├── demand_analysis.py
+    │   ├── outlier_detection.py
+    │   ├── validate_detection.py
+    │   ├── load_detection_results.py
+    │   └── database.py
+    │
+    ├── dashboard/
+    │   └── app.py
+    │
+    └── tests/
+        ├── test_data_quality.py
+        └── test_outlier_detection.py
+
+---
 
 ## Installation
 
@@ -361,27 +361,23 @@ For a local PostgreSQL installation:
 
     psql medical_equipment_demand -f sql/load_data.sql
 
-### 4. Run data-quality checks
-
-    python tests/test_data_quality.py
-
-### 5. Run demand analysis
+### 4. Run demand analysis
 
     python src/demand_analysis.py
 
-### 6. Run exceptional demand detection
+### 5. Run exceptional demand detection
 
     python src/outlier_detection.py
 
-### 7. Load detection results
+### 6. Load detection results
 
     python src/load_detection_results.py
 
-### 8. Create the analytical output
+### 7. Create the analytical output
 
     psql medical_equipment_demand -f sql/create_analysis_output.sql
 
-### 9. Run the dashboard locally
+### 8. Run the dashboard locally
 
     streamlit run dashboard/app.py
 
