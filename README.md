@@ -1,0 +1,450 @@
+# Medical Equipment Demand Analytics
+
+> **Portfolio project based on a real-world analytical problem, rebuilt with synthetic data for confidentiality.**
+
+[🚀 Open Interactive Dashboard](YOUR_STREAMLIT_URL)
+
+## Overview
+
+This project explores an analytical problem I encountered during an internship project in the agricultural equipment industry: **identifying exceptional demand in spare-parts data**.
+
+The original business project involved confidential company data. To create a publicly shareable portfolio project, the data, business-specific parameters and implementation were replaced with a fully synthetic dataset and a modified detection approach.
+
+The project was developed as an end-to-end analytics workflow combining SQL, PostgreSQL, Python, statistical analysis, validation and an interactive dashboard.
+
+> **Important:** No real company, customer or confidential business data is included in this repository.
+
+---
+
+## Business Problem
+
+Spare parts can have very different demand patterns.
+
+Some products are requested consistently, while others have intermittent, lumpy or highly variable demand.
+
+This creates a practical analytics question:
+
+> **How can unusually high demand be identified without applying the same threshold to every product?**
+
+The project focuses on detecting demand observations that are unusually high compared with a product's own historical behaviour.
+
+---
+
+## What the Project Does
+
+The pipeline:
+
+- generates a synthetic spare-parts demand dataset;
+- loads the data into PostgreSQL;
+- performs SQL-based analysis and data-quality checks;
+- analyses product-level demand patterns in Python;
+- classifies products by demand behaviour;
+- detects exceptional demand using profile-specific historical baselines;
+- tracks product reactivation as a separate signal;
+- validates the detection approach against synthetic ground-truth events;
+- creates an analytical output dataset;
+- presents the results in an interactive Streamlit dashboard.
+
+---
+
+## Key Results
+
+The final dataset contains:
+
+| Metric | Value |
+|---|---:|
+| Products | 700 |
+| Monthly observations | 26,814 |
+| Period | Jan 2022 – Dec 2025 |
+| Total demand | 82,786 |
+| Detected exceptional events | 311 |
+| Exceptional demand rate | 1.16% |
+| Reactivation signals | 483 |
+
+The detection approach was evaluated against 496 synthetic ground-truth events relevant to exceptional quantity detection.
+
+| Metric | Result |
+|---|---:|
+| Precision | 0.486 |
+| Recall | 0.304 |
+| F1-score | 0.374 |
+
+These metrics are presented as validation results for the synthetic dataset rather than as real-world production performance.
+
+---
+
+## Demand Profiles
+
+Demand is not treated as homogeneous across products.
+
+Each product is assigned a demand profile based on how frequently it is requested and how much its demand varies over time.
+
+### Stable
+
+Demand is relatively consistent over time.
+
+### Intermittent
+
+Demand occurs with frequent periods of zero demand.
+
+### Lumpy
+
+Demand is infrequent and varies considerably in size.
+
+### Erratic
+
+Demand is relatively frequent but highly variable.
+
+Because these profiles behave differently, exceptional demand is identified using profile-specific historical baselines rather than one common threshold.
+
+---
+
+## Exceptional Demand Detection
+
+The detection workflow is based on each product's historical behaviour.
+
+For each product:
+
+1. Historical demand characteristics are calculated.
+2. The product is assigned a demand profile.
+3. A profile-specific historical baseline is calculated.
+4. Current demand is compared with the expected historical level.
+5. Observations that exceed the relevant threshold are flagged as exceptional demand.
+6. An anomaly score is calculated to indicate how unusual the observation is.
+7. Product reactivation after a prolonged period of zero demand is tracked separately as an additional signal.
+
+The objective is to distinguish genuinely unusual demand from normal variation that is expected for a particular product.
+
+---
+
+## Data Pipeline
+
+```text
+Synthetic Data Generation
+          │
+          ▼
+        CSV
+          │
+          ▼
+     PostgreSQL
+          │
+     ┌────┴────┐
+     ▼         ▼
+   SQL      Data Quality
+ Analysis     Checks
+     │
+     └────┬────┘
+          ▼
+   Python Demand Analysis
+          │
+          ▼
+   Exceptional Demand Detection
+          │
+          ▼
+ analytics_demand_output
+          │
+          ▼
+      Streamlit
+      Dashboard
+
+## Database
+
+The PostgreSQL database contains the following main tables.
+
+### `products`
+
+Product master data:
+
+- `part_id`
+- `description`
+- `category`
+- `subcategory`
+
+### `sales`
+
+Monthly demand observations:
+
+- `part_id`
+- `date`
+- `demand`
+- `microarea`
+
+### `ground_truth`
+
+Synthetic event labels used only for validation:
+
+- `part_id`
+- `date`
+- `event_type`
+
+### `detection_results`
+
+Output generated by the Python detection pipeline.
+
+### `analytics_demand_output`
+
+Final analytical dataset combining product information with demand and detection results.
+
+The dashboard is built from this analytical output.
+
+---
+
+## SQL Analysis
+
+The SQL layer includes:
+
+- joins between transactional and product data;
+- monthly demand trends;
+- demand by category;
+- demand by microarea;
+- category × microarea analysis;
+- top products by demand;
+- zero-demand analysis;
+- demand variability;
+- seasonality analysis;
+- lifecycle analysis;
+- event impact analysis;
+- exceptional demand activity.
+
+SQL is also used for data-quality checks before the analytical output is created.
+
+---
+
+## Data Quality
+
+The pipeline includes checks for:
+
+- expected row counts;
+- unique product identifiers;
+- date coverage;
+- missing values;
+- invalid demand values;
+- duplicate observations;
+- valid category and microarea values;
+- consistency between generated data and ground truth.
+
+The detection output is also checked after loading into PostgreSQL to ensure that the CSV and database row counts match.
+
+---
+
+## Validation
+
+The synthetic data-generation process creates known exceptional events that can be used as ground truth.
+
+The validation layer compares detected events with these labels and calculates:
+
+- precision;
+- recall;
+- F1-score;
+- event-level recall by event type.
+
+`NEW_PRODUCT` events are excluded from the main quantity-outlier evaluation because new-product demand represents a lifecycle event rather than an unexpected increase relative to an established historical baseline.
+
+Ground-truth data is kept separate from the production-style analytical output and is not used by the dashboard to generate detection results.
+
+---
+
+## Dashboard
+
+The interactive Streamlit dashboard allows users to explore demand patterns and exceptional demand events.
+
+### Overview
+
+Key metrics include:
+
+- Total Demand
+- Active Parts
+- Exceptional Events
+- Exceptional Demand Rate
+
+### Product Demand History
+
+A product can be selected to inspect its demand history.
+
+The dashboard displays:
+
+- actual demand over time;
+- exceptional demand observations;
+- expected historical upper level;
+- anomaly score;
+- anomaly type.
+
+### Business Overview
+
+The dashboard includes:
+
+- Demand by Category;
+- Exceptional Events by Microarea;
+- Exceptional Events by Category;
+- Demand Profile Distribution.
+
+### Exceptional Demand Explorer
+
+A detailed table allows users to investigate individual exceptional observations by date, product, category, subcategory, microarea, demand, expected upper level, anomaly score and anomaly type.
+
+---
+
+## Dashboard Preview
+
+_Screenshots will be added here._
+
+---
+
+## Project Structure
+
+```text
+medical-equipment-demand-analytics/
+│
+├── README.md
+├── requirements.txt
+├── .gitignore
+│
+├── data/
+│   ├── README.md
+│   └── sample/
+│
+├── sql/
+│   ├── create_tables.sql
+│   ├── load_data.sql
+│   ├── data_quality_checks.sql
+│   ├── analysis_queries.sql
+│   └── create_analysis_output.sql
+│
+├── src/
+│   ├── generate_data.py
+│   ├── demand_analysis.py
+│   ├── outlier_detection.py
+│   ├── validate_detection.py
+│   ├── load_detection_results.py
+│   └── database.py
+│
+├── dashboard/
+│   └── app.py
+│
+└── tests/
+    ├── test_data_quality.py
+    └── test_outlier_detection.py
+
+## Installation
+
+### Requirements
+
+- Python 3.10+
+- PostgreSQL
+- Git
+
+### Install Python dependencies
+
+    pip install -r requirements.txt
+
+### Configure the database
+
+The project uses the `DB_CONNECTION_STRING` environment variable.
+
+For a local PostgreSQL installation:
+
+    export DB_CONNECTION_STRING="postgresql+psycopg2://localhost/medical_equipment_demand"
+
+---
+
+## Running the Pipeline
+
+### 1. Generate synthetic data
+
+    python generate_data.py
+
+### 2. Create PostgreSQL tables
+
+    psql medical_equipment_demand -f sql/create_tables.sql
+
+### 3. Load the data
+
+    psql medical_equipment_demand -f sql/load_data.sql
+
+### 4. Run data-quality checks
+
+    python tests/test_data_quality.py
+
+### 5. Run demand analysis
+
+    python src/demand_analysis.py
+
+### 6. Run exceptional demand detection
+
+    python src/outlier_detection.py
+
+### 7. Load detection results
+
+    python src/load_detection_results.py
+
+### 8. Create the analytical output
+
+    psql medical_equipment_demand -f sql/create_analysis_output.sql
+
+### 9. Run the dashboard locally
+
+    streamlit run dashboard/app.py
+
+---
+
+## Testing and Verification
+
+The project was verified using:
+
+- automated data-quality checks;
+- detection validation against synthetic ground-truth events;
+- consistency checks between generated CSV files and PostgreSQL;
+- row-count and date-range validation;
+- automated tests using `pytest`.
+
+Run the tests with:
+
+    pytest
+
+---
+
+## Reproducibility
+
+The synthetic dataset is generated using a fixed random seed.
+
+This makes the generated data reproducible and allows the analytical pipeline and validation results to be regenerated consistently.
+
+---
+
+## Use of AI Assistance
+
+ChatGPT was used as a coding and development assistant during the creation of this portfolio project, including support with Python, SQL, debugging, documentation and visualization.
+
+The project originated from an analytical idea developed during the original internship work, while the public dataset, implementation, validation setup and dashboard were redesigned for this portfolio version.
+
+---
+
+## Limitations
+
+This project uses synthetic data, so the demand patterns and event distribution do not represent a real medical equipment business.
+
+The detection approach is an analytical demonstration rather than a production forecasting or inventory-optimization system.
+
+Ground-truth events are generated synthetically and therefore provide a controlled validation framework rather than independent real-world labels.
+
+---
+
+## Technologies
+
+- **Python** — data generation, demand analysis and exceptional demand detection
+- **Pandas / NumPy** — data processing and statistical calculations
+- **PostgreSQL** — data storage and SQL analytics
+- **SQLAlchemy / psycopg2** — database connection
+- **Streamlit** — interactive dashboard
+- **Plotly** — data visualization
+- **pytest** — automated testing
+
+---
+
+## Portfolio Context
+
+This project demonstrates an end-to-end analytical workflow:
+
+**SQL → PostgreSQL → Python → Data Quality → Statistical Analysis → Validation → BI Dashboard**
+
+The focus is not only on identifying unusual observations, but also on making the resulting analysis reproducible, testable and understandable to non-technical users.
