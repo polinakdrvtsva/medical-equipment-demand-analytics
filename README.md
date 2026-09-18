@@ -285,31 +285,16 @@ The objective is to distinguish genuinely unusual demand from normal variation t
 
 ```mermaid
 flowchart TD
-    A[Synthetic Data Generation] --> B[CSV]
-    B --> C[PostgreSQL]
-    C --> D[SQL Analysis]
-    C --> E[Data Quality Checks]
-    D --> F[Python Demand Analysis]
+    A["Synthetic Data Generation"] --> B["CSV"]
+    B --> C["PostgreSQL"]
+    C --> D["SQL Analysis"]
+    C --> E["Data Quality Checks"]
+    D --> F["Python Demand Analysis"]
     E --> F
-    F --> G[Exceptional Demand Detection]
-    G --> H[analytics_demand_output]
-    H --> I[Streamlit Dashboard]
-    H --> J[Tableau Dashboard]
-
-## Data Pipeline
-
-```mermaid
-flowchart TD
-    A[Synthetic Data Generation] --> B[CSV]
-    B --> C[PostgreSQL]
-    C --> D[SQL Analysis]
-    C --> E[Data Quality Checks]
-    D --> F[Python Demand Analysis]
-    E --> F
-    F --> G[Exceptional Demand Detection]
-    G --> H[analytics_demand_output]
-    H --> I[Streamlit Dashboard]
-    H --> J[Tableau Dashboard]
+    F --> G["Exceptional Demand Detection"]
+    G --> H["analytics_demand_output"]
+    H --> I["Streamlit Dashboard"]
+    H --> J["Tableau Dashboard"]
 ```
 
 ## Database
@@ -577,6 +562,7 @@ medical-equipment-demand-analytics/
 └── tests/
     ├── test_data_quality.py
     └── test_outlier_detection.py
+```
 
 ## Installation
 
@@ -590,6 +576,7 @@ medical-equipment-demand-analytics/
 
 ```bash
 pip install -r requirements.txt
+```
 
 ### Configure the database
 
