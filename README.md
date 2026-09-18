@@ -71,6 +71,8 @@ The detection approach was evaluated against 496 synthetic target events, exclud
 
 These metrics are presented as validation results for the synthetic dataset rather than as real-world production performance.
 
+The detection metrics are discussed in more detail in the **Validation & Limitations** section below, including the precision–recall trade-off and the limitations of evaluating the approach on synthetic data.
+
 ---
 
 ## Demand Profiles
