@@ -296,6 +296,22 @@ flowchart TD
     H --> I[Streamlit Dashboard]
     H --> J[Tableau Dashboard]
 
+## Data Pipeline
+
+```mermaid
+flowchart TD
+    A[Synthetic Data Generation] --> B[CSV]
+    B --> C[PostgreSQL]
+    C --> D[SQL Analysis]
+    C --> E[Data Quality Checks]
+    D --> F[Python Demand Analysis]
+    E --> F
+    F --> G[Exceptional Demand Detection]
+    G --> H[analytics_demand_output]
+    H --> I[Streamlit Dashboard]
+    H --> J[Tableau Dashboard]
+```
+
 ## Database
 
 The PostgreSQL database contains the following main tables.
