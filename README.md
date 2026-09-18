@@ -107,34 +107,31 @@ To account for this, the detection pipeline first classifies each product's dema
 
 ### ADI and CV²
 
-Two statistics are used to describe demand behaviour:
+Two statistics are used to describe demand behaviour.
 
 **Average Demand Interval (ADI)** measures how frequently positive demand occurs:
 
-\[
+$$
 ADI = \frac{T}{N}
-\]
+$$
 
 where:
 
-- \(T\) is the number of historical periods;
-- \(N\) is the number of periods with positive demand.
+- $T$ is the number of historical periods;
+- $N$ is the number of periods with positive demand.
 
 A higher ADI indicates more intermittent demand.
 
 **Squared Coefficient of Variation (CV²)** measures the variability of positive demand quantities:
 
-\[
-CV^2 =
-\left(
-\frac{\sigma}{\mu}
-\right)^2
-\]
+$$
+CV^2 = \left(\frac{\sigma}{\mu}\right)^2
+$$
 
 where:
 
-- \(\mu\) is the mean positive demand;
-- \(\sigma\) is the standard deviation of positive demand.
+- $\mu$ is the mean positive demand;
+- $\sigma$ is the standard deviation of positive demand.
 
 The implementation calculates CV² using only positive demand observations, while zero-demand periods contribute to ADI and coverage. This reflects the distinction between demand frequency and demand-size variability.
 
@@ -173,20 +170,19 @@ The upper bound is deliberately different for different demand profiles.
 
 Stable demand is modelled using a Poisson-style threshold:
 
-\[
-UpperBound =
-\mu_{12} + 3.5\sqrt{\mu_{12}}
-\]
+$$
+UpperBound = \mu_{12} + 3.5\sqrt{\mu_{12}}
+$$
 
-where \(\mu_{12}\) is the mean demand over the previous 12 months.
+where $\mu_{12}$ is the mean demand over the previous 12 months.
 
 The square-root term reflects the variance structure of a Poisson distribution. The multiplier **3.5** is a manually selected safety coefficient used to create a relatively conservative threshold for stable demand.
 
 For example, if historical mean demand is 4:
 
-\[
+$$
 UpperBound = 4 + 3.5\sqrt{4} = 11
-\]
+$$
 
 A current demand substantially above this level becomes a candidate for exceptional demand.
 
@@ -194,15 +190,15 @@ A current demand substantially above this level becomes a candidate for exceptio
 
 Erratic demand has relatively frequent observations but high variation in quantity. A robust IQR-based threshold is therefore used:
 
-\[
+$$
 UpperBound = Q3 + 3.0 \times IQR
-\]
+$$
 
 where:
 
-\[
+$$
 IQR = Q3 - Q1
-\]
+$$
 
 The IQR approach is less sensitive to individual extreme observations than a mean-and-standard-deviation threshold.
 
@@ -210,11 +206,11 @@ The IQR approach is less sensitive to individual extreme observations than a mea
 
 For intermittent demand, the threshold also depends on demand coverage:
 
-\[
+$$
 Coverage =
 \frac{\text{number of positive-demand periods}}
 {\text{number of historical periods}}
-\]
+$$
 
 Three cases are used:
 
@@ -279,6 +275,8 @@ The ADI/CV² classification is based on established research into intermittent d
 
 The academic literature provides the theoretical background for intermittent-demand analysis, while the implementation-specific upper-bound coefficients in this project are custom heuristics developed for the synthetic portfolio dataset.
 
+---
+
 ## Exceptional Demand Detection
 
 The detection workflow is based on each product's historical behaviour.
@@ -313,6 +311,9 @@ flowchart TD
     F --> G[Exceptional Demand Detection]
     G --> H[analytics_demand_output]
     H --> I[Streamlit Dashboard]
+```
+
+---
 
 ## Database
 
@@ -498,8 +499,7 @@ A product can be selected to inspect its demand history.
 The dashboard displays:
 
 - actual demand over time;
-- exceptional demand observations;
-- expected historical upper level;
+- exceptional demand observations highlighted in red;
 - anomaly score;
 - anomaly type.
 
@@ -514,13 +514,15 @@ The dashboard includes:
 
 ### Exceptional Demand Explorer
 
-A detailed table allows users to investigate individual exceptional observations by date, product, category, subcategory, microarea, demand, expected upper level, anomaly score and anomaly type.
+A detailed table allows users to investigate individual exceptional observations by date, product, category, subcategory, microarea, demand, anomaly score and anomaly type.
 
 ---
 
 ## Dashboard Preview
 
-![Medical Equipment Demand Analytics Dashboard Example](docs/images/dashboard.png)
+![Medical Equipment Demand Analytics Dashboard](docs/images/dashboard.png)
+
+[🚀 Open Interactive Dashboard](https://medical-equipment-demand-analytics-ead9qjzcceccpdktotkqth.streamlit.app)
 
 ---
 
@@ -572,7 +574,9 @@ medical-equipment-demand-analytics/
 
 ### Install Python dependencies
 
-    pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
+```
 
 ### Configure the database
 
@@ -580,7 +584,9 @@ The project uses the `DB_CONNECTION_STRING` environment variable.
 
 For a local PostgreSQL installation:
 
-    export DB_CONNECTION_STRING="postgresql+psycopg2://localhost/medical_equipment_demand"
+```bash
+export DB_CONNECTION_STRING="postgresql+psycopg2://localhost/medical_equipment_demand"
+```
 
 ---
 
@@ -588,35 +594,51 @@ For a local PostgreSQL installation:
 
 ### 1. Generate synthetic data
 
-    python generate_data.py
+```bash
+python generate_data.py
+```
 
 ### 2. Create PostgreSQL tables
 
-    psql medical_equipment_demand -f sql/create_tables.sql
+```bash
+psql medical_equipment_demand -f sql/create_tables.sql
+```
 
 ### 3. Load the data
 
-    psql medical_equipment_demand -f sql/load_data.sql
+```bash
+psql medical_equipment_demand -f sql/load_data.sql
+```
 
 ### 4. Run demand analysis
 
-    python src/demand_analysis.py
+```bash
+python src/demand_analysis.py
+```
 
 ### 5. Run exceptional demand detection
 
-    python src/outlier_detection.py
+```bash
+python src/outlier_detection.py
+```
 
 ### 6. Load detection results
 
-    python src/load_detection_results.py
+```bash
+python src/load_detection_results.py
+```
 
 ### 7. Create the analytical output
 
-    psql medical_equipment_demand -f sql/create_analysis_output.sql
+```bash
+psql medical_equipment_demand -f sql/create_analysis_output.sql
+```
 
 ### 8. Run the dashboard locally
 
-    streamlit run dashboard/app.py
+```bash
+streamlit run dashboard/app.py
+```
 
 ---
 
@@ -632,7 +654,9 @@ The project was verified using:
 
 Run the tests with:
 
-    pytest
+```bash
+pytest
+```
 
 ---
 
