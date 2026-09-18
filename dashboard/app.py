@@ -312,11 +312,6 @@ else:
             "date": "Date",
             "demand": "Demand",
         },
-        hover_data={
-            "upper_bound": ":.1f",
-            "anomaly_score": ":.2f",
-            "anomaly_type": True,
-        },
     )
 
     fig_product.update_traces(
@@ -328,24 +323,8 @@ else:
         selector=dict(mode="lines+markers"),
     )
 
-    fig_product.add_scatter(
-        x=product_df["date"],
-        y=product_df["upper_bound"],
-        mode="lines",
-        name="Expected upper level",
-        line={
-            "dash": "dash",
-        },
-        hovertemplate=(
-            "<b>%{x|%b %Y}</b><br>"
-            "Expected upper level: %{y:.1f}"
-            "<extra></extra>"
-        ),
-    )
-
     # Highlight exceptional observations
     if not exceptional_df.empty:
-
         fig_product.add_scatter(
             x=exceptional_df["date"],
             y=exceptional_df["demand"],
@@ -353,21 +332,15 @@ else:
             marker={
                 "size": 11,
                 "symbol": "circle",
+                "color": "red",
             },
             name="Exceptional demand",
-            customdata=exceptional_df[
-                [
-                    "upper_bound",
-                    "anomaly_score",
-                    "anomaly_type",
-                ]
-            ],
+            customdata=exceptional_df[["anomaly_score", "anomaly_type"]],
             hovertemplate=(
                 "<b>%{x|%b %Y}</b><br>"
                 "Demand: %{y}<br>"
-                "Expected upper level: %{customdata[0]:.1f}<br>"
-                "Anomaly score: %{customdata[1]:.2f}<br>"
-                "Type: %{customdata[2]}"
+                "Anomaly score: %{customdata[0]:.2f}<br>"
+                "Type: %{customdata[1]}"
                 "<extra></extra>"
             ),
         )

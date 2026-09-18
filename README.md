@@ -61,7 +61,7 @@ The final dataset contains:
 | Exceptional demand rate | 1.16% |
 | Reactivation signals | 483 |
 
-The detection approach was evaluated against 496 synthetic ground-truth events relevant to exceptional quantity detection.
+The detection approach was evaluated against 496 synthetic target events, excluding `NEW_PRODUCT` lifecycle events from the main quantity-outlier evaluation.
 
 | Metric | Result |
 |---|---:|
@@ -99,6 +99,186 @@ Because these profiles behave differently, exceptional demand is identified usin
 
 ---
 
+## Demand Profiling & Upper-Bound Methodology
+
+Exceptional demand is not evaluated using one global threshold. Different products can have very different demand behaviours: some are requested almost every month, while others have long periods with no demand followed by occasional large orders.
+
+To account for this, the detection pipeline first classifies each product's demand profile and then applies a profile-specific historical threshold.
+
+### ADI and CV²
+
+Two statistics are used to describe demand behaviour:
+
+**Average Demand Interval (ADI)** measures how frequently positive demand occurs:
+
+\[
+ADI = \frac{T}{N}
+\]
+
+where:
+
+- \(T\) is the number of historical periods;
+- \(N\) is the number of periods with positive demand.
+
+A higher ADI indicates more intermittent demand.
+
+**Squared Coefficient of Variation (CV²)** measures the variability of positive demand quantities:
+
+\[
+CV^2 =
+\left(
+\frac{\sigma}{\mu}
+\right)^2
+\]
+
+where:
+
+- \(\mu\) is the mean positive demand;
+- \(\sigma\) is the standard deviation of positive demand.
+
+The implementation calculates CV² using only positive demand observations, while zero-demand periods contribute to ADI and coverage. This reflects the distinction between demand frequency and demand-size variability.
+
+### Demand Profile Classification
+
+The project uses the commonly referenced ADI/CV² classification scheme with cut-offs of **1.32 for ADI** and **0.49 for CV²**.
+
+| Profile | ADI | CV² | Interpretation |
+|---|---:|---:|---|
+| **Stable** | < 1.32 | < 0.49 | Frequent and relatively consistent demand |
+| **Erratic** | < 1.32 | ≥ 0.49 | Frequent demand with high quantity variability |
+| **Intermittent** | ≥ 1.32 | < 0.49 | Infrequent demand with relatively consistent positive quantities |
+| **Lumpy** | ≥ 1.32 | ≥ 0.49 | Infrequent and highly variable demand |
+
+The ADI/CV² framework is based on established research on intermittent demand and is widely used to distinguish different demand patterns. See the references below.
+
+### Historical Baseline
+
+After assigning a demand profile, the algorithm calculates a product-specific historical baseline.
+
+The baseline uses:
+
+- up to the previous **12 months** of demand;
+- a minimum of **6 months** of history;
+- the current observation is excluded from the baseline using a one-period shift.
+
+For intermittent and lumpy products, zero-demand periods are expected behaviour and therefore the baseline statistics are calculated from previous positive-demand observations.
+
+This prevents the current observation from influencing its own threshold and reduces data leakage during anomaly detection.
+
+### Profile-Specific Upper Bounds
+
+The upper bound is deliberately different for different demand profiles.
+
+#### Stable demand
+
+Stable demand is modelled using a Poisson-style threshold:
+
+\[
+UpperBound =
+\mu_{12} + 3.5\sqrt{\mu_{12}}
+\]
+
+where \(\mu_{12}\) is the mean demand over the previous 12 months.
+
+The square-root term reflects the variance structure of a Poisson distribution. The multiplier **3.5** is a manually selected safety coefficient used to create a relatively conservative threshold for stable demand.
+
+For example, if historical mean demand is 4:
+
+\[
+UpperBound = 4 + 3.5\sqrt{4} = 11
+\]
+
+A current demand substantially above this level becomes a candidate for exceptional demand.
+
+#### Erratic demand
+
+Erratic demand has relatively frequent observations but high variation in quantity. A robust IQR-based threshold is therefore used:
+
+\[
+UpperBound = Q3 + 3.0 \times IQR
+\]
+
+where:
+
+\[
+IQR = Q3 - Q1
+\]
+
+The IQR approach is less sensitive to individual extreme observations than a mean-and-standard-deviation threshold.
+
+#### Intermittent demand
+
+For intermittent demand, the threshold also depends on demand coverage:
+
+\[
+Coverage =
+\frac{\text{number of positive-demand periods}}
+{\text{number of historical periods}}
+\]
+
+Three cases are used:
+
+| Coverage | Upper-bound rule |
+|---|---|
+| < 20% | Median × 2.5 |
+| 20%–40% | max(Median × 3.0, Q3) |
+| ≥ 40% | Q3 + 2.5 × IQR |
+
+The logic becomes more conservative as the demand series becomes less sparse.
+
+#### Lumpy demand
+
+Lumpy demand follows the same coverage-based structure, but uses a wider IQR multiplier in the less-sparse case because lumpy demand combines intermittency with greater quantity variability:
+
+| Coverage | Upper-bound rule |
+|---|---|
+| < 20% | Median × 2.5 |
+| 20%–40% | max(Median × 3.0, Q3) |
+| ≥ 40% | Q3 + 3.0 × IQR |
+
+### Why use different thresholds?
+
+A single global threshold would treat very different products as if they had the same normal demand behaviour.
+
+For example, a demand of 15 units could be:
+
+- unusually high for a product that normally receives 3–4 units per month;
+- completely normal for a product that regularly receives 12–15 units;
+- difficult to interpret for a lumpy product whose positive orders occur only a few times per year.
+
+The profile-specific approach therefore makes the detection logic relative to each product's own historical behaviour.
+
+### Parameter Choice
+
+The coefficients in this project are **heuristic parameters**, not parameters learned or optimized from real company data.
+
+They were selected to demonstrate a transparent and reproducible analytical approach:
+
+| Parameter | Value | Purpose |
+|---|---:|---|
+| ADI threshold | 1.32 | Demand-frequency classification |
+| CV² threshold | 0.49 | Demand-variability classification |
+| Historical window | 12 months | Recent product behaviour |
+| Minimum history | 6 months | Avoid unstable early thresholds |
+| Stable Poisson multiplier | 3.5 | Conservative upper bound |
+| Erratic IQR multiplier | 3.0 | Robust threshold for variable demand |
+| Intermittent IQR multiplier | 2.5 | Threshold for less-sparse intermittent demand |
+| Lumpy IQR multiplier | 3.0 | Wider threshold for highly variable demand |
+| Very sparse coverage | 20% | Switch to median-based threshold |
+| Sparse coverage | 40% | Switch between sparse and IQR-based rules |
+
+These parameters should be recalibrated using historical labelled data and business costs before applying a similar approach in a production environment.
+
+### References
+
+The ADI/CV² classification is based on established research into intermittent demand:
+
+- Syntetos, A. A., & Boylan, J. E. (2005). *The accuracy of intermittent demand estimates*. International Journal of Forecasting, 21(2), 303–314.
+- Syntetos, A. A., & Boylan, J. E. (2001). *On the bias of intermittent demand estimates*. International Journal of Production Economics, 71(1–3), 457–466.
+- frePPLe. *Demand classification: why forecastability matters*. Medium — a practical explanation of ADI/CV² demand classification.
+
+The academic literature provides the theoretical background for intermittent-demand analysis, while the implementation-specific upper-bound coefficients in this project are custom heuristics developed for the synthetic portfolio dataset.
+
 ## Exceptional Demand Detection
 
 The detection workflow is based on each product's historical behaviour.
@@ -119,32 +299,20 @@ The objective is to distinguish genuinely unusual demand from normal variation t
 
 ## Data Pipeline
 
-Synthetic Data Generation
-          │
-          ▼
-        CSV
-          │
-          ▼
-     PostgreSQL
-          │
-     ┌────┴────┐
-     ▼         ▼
-   SQL      Data Quality
- Analysis     Checks
-     │
-     └────┬────┘
-          ▼
-   Python Demand Analysis
-          │
-          ▼
-   Exceptional Demand Detection
-          │
-          ▼
- analytics_demand_output
-          │
-          ▼
-      Streamlit
-      Dashboard
+```mermaid
+flowchart TD
+    A[Synthetic Data Generation] --> B[CSV]
+    B --> C[PostgreSQL]
+
+    C --> D[SQL Analysis]
+    C --> E[Data Quality Checks]
+
+    D --> F[Python Demand Analysis]
+    E --> F
+
+    F --> G[Exceptional Demand Detection]
+    G --> H[analytics_demand_output]
+    H --> I[Streamlit Dashboard]
 
 ## Database
 
@@ -226,20 +394,87 @@ The detection output is also checked after loading into PostgreSQL to ensure tha
 
 ---
 
-## Validation
+## Validation & Limitations
 
-The synthetic data-generation process creates known exceptional events that can be used as ground truth.
+The detection pipeline was validated against synthetic ground-truth events generated together with the dataset.
 
-The validation layer compares detected events with these labels and calculates:
+`NEW_PRODUCT` events are excluded from the main quantity-outlier evaluation because a new product does not have an established historical baseline. Its initial demand is therefore a lifecycle event rather than an unexpected increase relative to previous demand.
 
-- precision;
-- recall;
-- F1-score;
-- event-level recall by event type.
+The main validation set contains **496 target events**.
 
-`NEW_PRODUCT` events are excluded from the main quantity-outlier evaluation because new-product demand represents a lifecycle event rather than an unexpected increase relative to an established historical baseline.
+### Validation Results
 
-Ground-truth data is kept separate from the production-style analytical output and is not used by the dashboard to generate detection results.
+| Metric | Result |
+|---|---:|
+| Precision | 0.486 |
+| Recall | 0.304 |
+| F1-score | 0.374 |
+
+These results should be interpreted as validation of the analytical pipeline on a controlled synthetic dataset, **not as estimates of real-world production performance**.
+
+The detector identified 311 exceptional demand observations. Of these, 151 matched target ground-truth events, while 160 were false positives under the synthetic validation rules.
+
+### Interpreting the Results
+
+The results demonstrate a clear precision–recall trade-off.
+
+A lower anomaly threshold produces more alerts and therefore increases the opportunity to detect exceptional events, but it also produces more false positives. A higher threshold reduces false positives but misses more target events.
+
+For this portfolio project, the detector is therefore positioned as a **screening and prioritization tool**, rather than a fully automated decision system.
+
+In a real business environment, the appropriate threshold would depend on the relative cost of:
+
+- missing an exceptional demand event;
+- investigating a false alert;
+- delaying a replenishment or planning decision;
+- and the operational capacity available for manual review.
+
+### Why the Results Are Limited
+
+The dataset is fully synthetic. This provides important benefits for a portfolio project:
+
+- the data can be shared publicly;
+- the generation process is reproducible;
+- exceptional events have known labels;
+- the complete analytical pipeline can be demonstrated without exposing confidential information.
+
+However, synthetic data also limits how far the validation results can be generalized.
+
+The main limitations are:
+
+1. **Synthetic demand behaviour**
+
+   The demand patterns were generated using predefined statistical rules. Real spare-parts demand can contain more complex dependencies and irregularities.
+
+2. **Synthetic ground truth**
+
+   The ground-truth events are generated by the same synthetic process as the demand data. They are therefore controlled labels rather than independent expert annotations from real business data.
+
+3. **Heuristic parameters**
+
+   The upper-bound coefficients were selected manually for transparency and reproducibility. They were not optimized using a large real-world labelled dataset.
+
+4. **Limited business context**
+
+   The dataset does not model all factors that can influence spare-parts demand, such as installed equipment population, machine age, maintenance schedules, lead times, stock availability, substitutions, customer-specific behaviour or supply constraints.
+
+5. **Limited event taxonomy**
+
+   The synthetic dataset contains a predefined set of exceptional events. Real operational data may contain additional causes of unusual demand that are not represented here.
+
+6. **No production cost optimization**
+
+   The threshold was not optimized against an explicit business cost function. In production, false positives and false negatives would have different operational costs.
+
+### Intended Use
+
+The primary objective of this project is to demonstrate an end-to-end analytical workflow:
+
+**SQL → data quality → demand profiling → historical baselines → exceptional-demand detection → validation → BI dashboard**
+
+The validation results should therefore be read as evidence that the pipeline is testable and reproducible on controlled data, rather than as evidence that the detection logic is ready for direct production deployment.
+
+A production implementation would require historical real-world data, independently labelled exceptional events, domain validation of event definitions, parameter calibration and monitoring of detection quality over time.
 
 ---
 
@@ -285,7 +520,7 @@ A detailed table allows users to investigate individual exceptional observations
 
 ## Dashboard Preview
 
-_Screenshots will be added here._
+![Medical Equipment Demand Analytics Dashboard Example](docs/images/dashboard.png)
 
 ---
 
